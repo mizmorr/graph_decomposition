@@ -1,17 +1,15 @@
-package main
+package core
 
 import (
 	"bufio"
 	"decomposition/maps"
+	"flag"
 	"fmt"
-	"io/ioutil"
+	"log"
+	"os"
 	"strconv"
 	"strings"
-	"sync"
-)
-
-var (
-	wg sync.WaitGroup
+	"time"
 )
 
 type Graph interface {
@@ -62,23 +60,11 @@ func p_pring(ar []*Node) {
 	}
 	fmt.Println()
 }
-func test() {
+func Test() {
 	g := first_sample()
-	var (
-		unprocessed = maps.Keys_ordered(g.nodes)
-		v           int64
-		err         error
-	)
-	for len(g.nodes) > 0 {
-		v, unprocessed, err = pop(unprocessed)
-		g.print()
-		fmt.Println(g.nodes[v].adj_list)
-		if err == nil {
-			fmt.Println(v)
-			g.remove_node(v)
-		}
-		fmt.Println()
-	}
+	t := time.Now()
+	g.k_core_label()
+	fmt.Println(time.Since(t).Seconds())
 }
 func (g *Undirected_Graph) k_core_label() *Core_set {
 	core_set := Core_set{numbers: make(map[int64]int64, len(g.nodes))}
@@ -110,23 +96,31 @@ func (g *Undirected_Graph) k_core_label() *Core_set {
 }
 
 func first_sample() *Undirected_Graph {
-	var result []int64
 	g := NewUndirectedGraph()
-	f, err := ioutil.ReadFile("samples/graph1.txt")
-	if err != nil {
-		panic(err)
+	filename := flag.String("filename", "samples/graph1.txt", "The file to parse")
+	flag.Parse()
+	var result []int64
+	if *filename == "" {
+		log.Fatal("Provide a file to parse")
 	}
-	scanner := bufio.NewScanner(strings.NewReader(string(f)))
-	scanner.Split(bufio.ScanWords)
-	for scanner.Scan() {
-		s := strings.Split(scanner.Text(), " ")
-		for _, j := range s {
-			postj, err := strconv.Atoi(j)
+
+	names := make(chan string)
+	readerr := make(chan error)
+	go GetLine(*filename, names, readerr)
+
+	for name := range names {
+		k := strings.Split(name, " ")
+		for _, num := range k {
+			postj, err := strconv.Atoi(num)
 			if err != nil {
 				panic(err)
 			}
 			result = append(result, int64(postj))
 		}
+
+	}
+	if err := <-readerr; err != nil {
+		log.Fatal(err)
 	}
 	adjes := map[int64]map[int64]int64{}
 	for _, node := range result {
@@ -272,74 +266,85 @@ func interpolation_search(arr []int64, low, high, search int64) int64 {
 // 	return Graph{nodes}
 // }
 
-// func Create_Graph_with_names(names []string) {
-// 	defer wg.Done()
-// 	nodes := []Node{}
-// 	go func() {
-// 		for _, name := range names {
-// 			nodes = append(nodes, Node{name, 0, []int64{}})
-// 			fmt.Print64ln(name)
-// 		}
-// 	}()
-// 	return
+//	func Create_Graph_with_names(names []string) {
+//		defer wg.Done()
+//		nodes := []Node{}
+//		go func() {
+//			for _, name := range names {
+//				nodes = append(nodes, Node{name, 0, []int64{}})
+//				fmt.Print64ln(name)
+//			}
+//		}()
+//		return
+//	}
+func GetLine(filename string, names chan string, readerr chan error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		names <- scanner.Text()
+	}
+	close(names) // close causes range on channel to break out of loop
+	readerr <- scanner.Err()
+}
+
+// nodes := []*Node{{0, 0, map[int64]int64{0: 1, 1: 3}, 2}, {1, 0, map[int64]int64{0: 0, 1: 3}, 2}, {3, 0, map[int64]int64{0: 0, 1: 1}, 2}}
+// g := first_sample()
+// fmt.Println(g.k_core_label())
+// set := g.k_core_label()
+// fmt.Println(set)
+// var elements = []int{1, 2, 3, 4}
+
+// fmt.Println(graph.nodes)
+// graph.remove_node(8)
+// fmt.Println(graph.nodes)
+
+// graph.remove_node(1)
+// graph.remove_node(2)
+// graph.print()
+// graph.remove_node(8)
+// graph.print()
+
+// core_set := graph.k_core_label()
+// core_set.numbers[1] = 1
+// fmt.Println(binarySearch2([]int{0, 1, 2, 3}, 1))
+// 	fmt.Printf("%v, ", graph.nodes[0].ID)
+// 	fmt.Printf("%v, ", graph.nodes[1].ID)
+// 	fmt.Printf("%v, ", graph.nodes[2].ID)
+// 	fmt.Printf("%v, \n", graph.nodes[3].ID)
+
+// 	for i := range graph.nodes {
+// 		fmt.Printf("%v ", i)
+// 		fmt.Printf("%v, ", graph.nodes[i].ID)
+// 	}
+// 	fmt.Println()
+// 	fmt.Println("_-------------------------------------_")
+// 	fmt.Println()
+// 	// graph.print()
 // }
 
-func main() {
-	// nodes := []*Node{{0, 0, map[int64]int64{0: 1, 1: 3}, 2}, {1, 0, map[int64]int64{0: 0, 1: 3}, 2}, {3, 0, map[int64]int64{0: 0, 1: 1}, 2}}
-	g := first_sample()
-	fmt.Println(g.k_core_label())
-	// set := g.k_core_label()
-	// fmt.Println(set)
-	// var elements = []int{1, 2, 3, 4}
+// for {
+// 	graph := NewUndirectedGraph()
+// 	graph.append_node(map[int64]int64{})
+// 	graph.append_node(map[int64]int64{0: 0})
+// 	graph.append_node(map[int64]int64{0: 0, 1: 1})
+// 	graph.append_node(map[int64]int64{0: 1, 1: 2})
+// 	vals := maps.Values2(graph.nodes)
+// 	for _, val := range vals {
+// 		fmt.Printf("%v, ", val.ID)
+// 	}
+// 	fmt.Println()
+// }
 
-	// fmt.Println(graph.nodes)
-	// graph.remove_node(8)
-	// fmt.Println(graph.nodes)
+// graph.append_node([]int64{0, 2})
+// graph.append_node([]int64{0, 2})
 
-	// graph.remove_node(1)
-	// graph.remove_node(2)
-	// graph.print()
-	// graph.remove_node(8)
-	// graph.print()
-
-	// core_set := graph.k_core_label()
-	// core_set.numbers[1] = 1
-	// fmt.Println(binarySearch2([]int{0, 1, 2, 3}, 1))
-	// 	fmt.Printf("%v, ", graph.nodes[0].ID)
-	// 	fmt.Printf("%v, ", graph.nodes[1].ID)
-	// 	fmt.Printf("%v, ", graph.nodes[2].ID)
-	// 	fmt.Printf("%v, \n", graph.nodes[3].ID)
-
-	// 	for i := range graph.nodes {
-	// 		fmt.Printf("%v ", i)
-	// 		fmt.Printf("%v, ", graph.nodes[i].ID)
-	// 	}
-	// 	fmt.Println()
-	// 	fmt.Println("_-------------------------------------_")
-	// 	fmt.Println()
-	// 	// graph.print()
-	// }
-
-	// for {
-	// 	graph := NewUndirectedGraph()
-	// 	graph.append_node(map[int64]int64{})
-	// 	graph.append_node(map[int64]int64{0: 0})
-	// 	graph.append_node(map[int64]int64{0: 0, 1: 1})
-	// 	graph.append_node(map[int64]int64{0: 1, 1: 2})
-	// 	vals := maps.Values2(graph.nodes)
-	// 	for _, val := range vals {
-	// 		fmt.Printf("%v, ", val.ID)
-	// 	}
-	// 	fmt.Println()
-	// }
-
-	// graph.append_node([]int64{0, 2})
-	// graph.append_node([]int64{0, 2})
-
-	// node := binarySearch(graph.nodes, 1)
-	// fmt.Print64ln(node.ID)
-
-}
+// node := binarySearch(graph.nodes, 1)
+// fmt.Print64ln(node.ID)
 
 //	func (g Graph) createGraph(names []string) {
 //		for i := range names {

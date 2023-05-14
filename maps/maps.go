@@ -40,10 +40,9 @@ func Values2[M ~map[int64]V, V any](m M) []V {
 	}
 	return r
 }
-
-func Pop_front(s []any) (first any, second []any) {
-	if len(s) == 0 {
+func Pop[T any](stack *[]T) {
+	if len(*stack) == 0 {
 		return
 	}
-	return s[0], s[1:]
+	*stack = (*stack)[:len(*stack)-1]
 }

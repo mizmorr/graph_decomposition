@@ -4,9 +4,59 @@ import (
 	"decomposition/core"
 	"fmt"
 	"sync"
-	"time"
 )
 
+func another_test(a []int) {
+	var someMapMutex = sync.RWMutex{}
+	m := make(map[int64]int, 0)
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func(wg *sync.WaitGroup, m *map[int64]int) {
+		defer wg.Done()
+		part := a[:len(a)/2]
+		for _, v := range part {
+			someMapMutex.Lock()
+			if len(*m) == 0 {
+				(*m)[0] = v
+			} else {
+				(*m)[int64(len(*m))] = v
+			}
+			someMapMutex.Unlock()
+		}
+
+	}(&wg, &m)
+	go func(wg *sync.WaitGroup, m *map[int64]int) {
+		defer wg.Done()
+		part := a[len(a)/2:]
+		for _, v := range part {
+			someMapMutex.Lock()
+			if len(*m) == 0 {
+				(*m)[0] = v
+			} else {
+				(*m)[int64(len(*m))] = v
+			}
+			someMapMutex.Unlock()
+		}
+
+	}(&wg, &m)
+	go func(wg *sync.WaitGroup, m *map[int64]int) {
+		defer wg.Done()
+		part := a
+		for _, v := range part {
+			someMapMutex.Lock()
+			if len(*m) == 0 {
+				(*m)[0] = v
+			} else {
+				(*m)[int64(len(*m))] = v
+			}
+			someMapMutex.Unlock()
+		}
+
+	}(&wg, &m)
+	fmt.Println("Waiting for goroutines to finish...")
+	wg.Wait()
+
+}
 func appender(m *map[int64]string, str string) {
 	var someMapMutex = sync.RWMutex{}
 	someMapMutex.Lock()
@@ -54,13 +104,14 @@ func main() {
 	// ggraph := core.GG_create(nodes, 2)
 	// ggraph.Print()
 	// testing()
-	t := time.Now()
-	testing(a)
-	res_conc := time.Since(t).Seconds()
+	// t := time.Now()
+	// testing(a)
+	// res_conc := time.Since(t).Seconds()
 	// m := make(map[int64]string, 0)
 	// t = time.Now()
 	// core.Test2(a, []int{}, 0, 2, &m)
 	// res_linear := time.Since(t).Seconds()
-	fmt.Println("res_conc", res_conc, "res_linear")
+	// fmt.Println("res_conc", res_conc, "res_linear")
+	another_test(a)
 
 }

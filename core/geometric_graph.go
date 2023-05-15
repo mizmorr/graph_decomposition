@@ -19,30 +19,29 @@ type Geometric_node struct {
 	y            float64
 	ID           int64
 	edges_number int64
+	core_number  int
 }
 type Edge struct {
 	source          *Geometric_node
 	destination     *Geometric_node
 	triangle_number int64
+	triangles       map[int64]*Corner
 }
-type Triangle struct {
-	source      *Geometric_node
-	middle      *Geometric_node
-	destination *Geometric_node
+type Corner struct {
+	middle      *Edge
+	destination *Edge
 }
 type Geometric_graph struct {
-	nodes     []*Geometric_node
-	edges     map[int64]*Edge
-	triangles map[int64]*Triangle
+	nodes []*Geometric_node
+	edges map[int64]*Edge
 }
 
 func GG_create(nodes []*Geometric_node, radius float64) *Geometric_graph {
 	edges := get_edges(nodes, radius)
 
 	graph := &Geometric_graph{
-		nodes:     nodes,
-		edges:     edges,
-		triangles: map[int64]*Triangle{},
+		nodes: nodes,
+		edges: edges,
 	}
 	graph.get_triangles()
 	graph.mark_nodes()
@@ -57,48 +56,47 @@ func (g *Geometric_graph) Print() {
 	// }
 	for i := 0; i < len(g.edges); i++ {
 		fmt.Println(g.edges[int64(i)].destination.ID, g.edges[int64(i)].source.ID, g.edges[int64(i)].triangle_number)
+		for _, t := range g.edges[int64(i)].triangles {
+			fmt.Println(t.destination.destination.ID, t.destination.source.ID, t.middle.destination.ID, t.middle.source.ID)
+		}
+		fmt.Println()
 	}
-	// fmt.Println()
-	// for _, triangle := range g.triangles {
-	// 	fmt.Println(triangle.source.ID, triangle.middle.ID, triangle.destination.ID)
-	// }
+	fmt.Println()
 	// for _, node := range g.nodes {
 	// 	fmt.Println(node.ID, node.edges_number)
 	// }
 }
-func Test5(g *Geometric_graph) {
-	for _, t := range g.triangles {
-		fmt.Println(t.middle.ID, t.source.ID, t.destination.ID)
+
+func (e *Edge) add_triangle(middle, destination *Edge) {
+	if len(e.triangles) == 0 {
+		e.triangles[0] = &Corner{middle: middle, destination: destination}
+		e.triangle_number++
+	} else {
+		corner := &Corner{middle: middle, destination: destination}
+		if !e.is_triangle_exist(corner) {
+			e.triangles[int64(len(e.triangles))] = corner
+			e.triangle_number++
+		}
 	}
 }
-
 func (g *Geometric_graph) get_triangles() {
 	for i := int64(0); i < int64(len(g.edges)-1); i++ {
 		for j := i + 1; j < int64(len(g.edges)); j++ {
-			if ok, node_1, node_2, node_3 := are_connected(g.edges[i], g.edges[j]); ok {
+			if ok, node_1, node_2 := are_connected(g.edges[i], g.edges[j]); ok {
 				if ok, num := g.Search(node_1, node_2); ok {
-					if len(g.triangles) == 0 {
-						g.edges[i].triangle_number++
-						g.edges[j].triangle_number++
-						g.edges[num].triangle_number++
-						fmt.Println(i, j, num)
-						g.triangles[0] = &Triangle{source: node_1, middle: node_2, destination: node_3}
-
-					} else {
-						triangle := &Triangle{source: node_1, middle: node_2, destination: node_3}
-						if !g.is_triangle_exist(triangle) {
-							g.triangles[int64(len(g.triangles))] = triangle
-							g.edges[i].triangle_number++
-							g.edges[j].triangle_number++
-							g.edges[num].triangle_number++
-							fmt.Println(i, j, num)
-
-						}
-					}
+					g.edges[i].add_triangle(g.edges[j], g.edges[num])
+					g.edges[j].add_triangle(g.edges[i], g.edges[num])
+					g.edges[num].add_triangle(g.edges[i], g.edges[j])
 				}
 			}
 		}
 	}
+
+}
+func (g *Geometric_graph) remove_edge(id int64) {
+	delete(g.edges, id)
+}
+func (g *Geometric_graph) triangle_k_core() {
 
 }
 func Test4(g *Geometric_graph) {
@@ -110,11 +108,11 @@ func Test4(g *Geometric_graph) {
 	for i := int64(0); i < int64(len(g.edges)); i++ {
 		fmt.Println(g.edges[i].destination.ID, g.edges[i].source.ID)
 	}
-
 }
-func (t *Triangle) equal(other *Triangle) bool {
-	f_ids := []int64{t.source.ID, t.middle.ID, t.destination.ID}
-	s_ids := []int64{other.source.ID, other.middle.ID, other.destination.ID}
+func (t *Corner) equal(other *Corner) bool {
+
+	f_ids := []int64{t.destination.destination.ID, t.destination.source.ID, t.middle.destination.ID, t.middle.source.ID}
+	s_ids := []int64{other.destination.destination.ID, other.destination.source.ID, other.middle.destination.ID, other.middle.source.ID}
 	sort.Slice(f_ids, func(i, j int) bool {
 		return f_ids[i] < f_ids[j]
 	})
@@ -123,27 +121,27 @@ func (t *Triangle) equal(other *Triangle) bool {
 	})
 	return reflect.DeepEqual(f_ids, s_ids)
 }
-func (g *Geometric_graph) is_triangle_exist(t *Triangle) bool {
+func (e *Edge) is_triangle_exist(t *Corner) bool {
 
-	for _, elem := range g.triangles {
+	for _, elem := range e.triangles {
 		if elem.equal(t) {
 			return true
 		}
 	}
 	return false
 }
-func are_connected(first, second *Edge) (bool, *Geometric_node, *Geometric_node, *Geometric_node) {
+func are_connected(first, second *Edge) (bool, *Geometric_node, *Geometric_node) {
 	switch {
 	case first.source == second.source:
-		return true, first.destination, second.destination, first.source
+		return true, first.destination, second.destination
 	case first.source == second.destination:
-		return true, first.destination, second.source, first.source
+		return true, first.destination, second.source
 	case first.destination == second.source:
-		return true, first.source, second.destination, first.destination
+		return true, first.source, second.destination
 	case first.destination == second.destination:
-		return true, first.source, second.source, first.destination
+		return true, first.source, second.source
 	default:
-		return false, nil, nil, nil
+		return false, nil, nil
 	}
 }
 func (g *Geometric_graph) Search(s, d *Geometric_node) (bool, int64) {
@@ -213,10 +211,10 @@ func map_write(nodes []*Geometric_node, tmp []*Geometric_node, left, k int, radi
 
 			if len(*edges) == 0 {
 
-				(*edges)[0] = &Edge{source: tmp[0], destination: tmp[1]}
+				(*edges)[0] = &Edge{source: tmp[0], destination: tmp[1], triangles: map[int64]*Corner{}}
 
 			} else {
-				(*edges)[int64(len(*edges))] = &Edge{source: tmp[0], destination: tmp[1]}
+				(*edges)[int64(len(*edges))] = &Edge{source: tmp[0], destination: tmp[1], triangles: map[int64]*Corner{}}
 			}
 			someMapMutex.Unlock()
 		}
@@ -251,11 +249,11 @@ func get_edges(nodes []*Geometric_node, radius float64) map[int64]*Edge {
 				if get_distance(node, node2) <= radius {
 					someMapMutex.Lock()
 					if len(m) == 0 {
-						m[0] = &Edge{source: node, destination: node2}
+						m[0] = &Edge{source: node, destination: node2, triangles: map[int64]*Corner{}}
 
 					} else {
 
-						m[int64(len(m))] = &Edge{source: node, destination: node2}
+						m[int64(len(m))] = &Edge{source: node, destination: node2, triangles: map[int64]*Corner{}}
 					}
 					someMapMutex.Unlock()
 				}

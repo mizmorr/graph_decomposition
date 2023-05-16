@@ -1,6 +1,8 @@
 package maps
 
-import "sort"
+import (
+	"sort"
+)
 
 // Keys returns the keys of the map m.
 // The keys will be in an indeterminate order.
@@ -40,9 +42,21 @@ func Values2[M ~map[int64]V, V any](m M) []V {
 	}
 	return r
 }
+
 func Pop[T any](stack *[]T) {
 	if len(*stack) == 0 {
 		return
 	}
 	*stack = (*stack)[:len(*stack)-1]
+}
+func Pop_front[T any](stack *[]T) T {
+	if len(*stack) == 0 {
+		var NULL T
+		return NULL
+	} else {
+		poped := (*stack)[0]
+		*stack = (*stack)[1:]
+		return poped
+	}
+
 }

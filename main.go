@@ -68,41 +68,23 @@ func appender(m *map[int64]string, str string) {
 	someMapMutex.Unlock()
 
 }
-func testing(a []int) {
-	var wg sync.WaitGroup
-	wg.Add(3)
-	m := make(map[int64]string, 0)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		core.Test2(a[:len(a)/2], []int{}, 0, 2, &m)
 
-	}(&wg)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		core.Test2(a[len(a)/2:], []int{}, 0, 2, &m)
-	}(&wg)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		first_half := a[:len(a)/2]
-		second_half := a[len(a)/2:]
-		for _, elem := range first_half {
-			for _, e := range second_half {
-				appender(&m, fmt.Sprint(elem, e))
-
-			}
-		}
-	}(&wg)
-	fmt.Println("Waiting for goroutines to finish...")
-	wg.Wait()
-}
 func main() {
-	a := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30}
-	// first := core.Get_node(0, 0)
-	// second := core.Get_node(1, 1)
-	// third := core.Get_node(2, 2)
-	// nodes := []*core.Geometric_node{first, second, third}
-	// ggraph := core.GG_create(nodes, 2)
-	// ggraph.Print()
+	// a := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30}
+	first := core.Get_node(0, 0, 0)
+	second := core.Get_node(1, 1, 1)
+	third := core.Get_node(2, 2, 2)
+	fourth := core.Get_node(3, 3, 3)
+	fifth := core.Get_node(4, 4, 4)
+	sixth := core.Get_node(5, 5, 5)
+	seventh := core.Get_node(6, 6, 6)
+	eighth := core.Get_node(7, 7, 7)
+	nodes := []*core.Geometric_node{first, second, third, fourth, fifth, sixth, seventh, eighth}
+
+	graph := core.GG_create(nodes, 3)
+	core.Test7(graph)
+	// fmt.Println(ggraph.Search(0, 1))
+
 	// testing()
 	// t := time.Now()
 	// testing(a)
@@ -112,6 +94,6 @@ func main() {
 	// core.Test2(a, []int{}, 0, 2, &m)
 	// res_linear := time.Since(t).Seconds()
 	// fmt.Println("res_conc", res_conc, "res_linear")
-	another_test(a)
+	// another_test(a)
 
 }

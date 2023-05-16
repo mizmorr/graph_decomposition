@@ -19,7 +19,7 @@ type Geometric_node struct {
 	y            float64
 	ID           int64
 	edges_number int64
-	core_number  int
+	core_number  int64
 }
 type Edge struct {
 	source          *Geometric_node
@@ -54,6 +54,7 @@ func (g *Geometric_graph) Print() {
 	// for i, edge := range g.edges {
 	// 	fmt.Println(i, edge.source.ID, edge.destination.ID)
 	// }
+
 	for i := 0; i < len(g.edges); i++ {
 		fmt.Println(g.edges[int64(i)].destination.ID, g.edges[int64(i)].source.ID, g.edges[int64(i)].triangle_number)
 		for _, t := range g.edges[int64(i)].triangles {
@@ -93,10 +94,62 @@ func (g *Geometric_graph) get_triangles() {
 	}
 
 }
-func (g *Geometric_graph) remove_edge(id int64) {
+
+func (g *Geometric_graph) Remove_edge(edge *Edge) {
+	_, id := g.Search(edge.source, edge.destination)
 	delete(g.edges, id)
 }
-func (g *Geometric_graph) triangle_k_core() {
+func (g *Geometric_graph) remove2(id int64) {
+	delete(g.edges, id)
+}
+func Values3(m map[int64]*Edge) []*Edge {
+	r := make([]*Edge, 0)
+	for i := int64(0); i < int64(len(m)); i++ {
+		if v, ok := m[i]; ok {
+			r = append(r, v)
+		}
+	}
+	return r
+}
+func Test7(g *Geometric_graph) {
+	fmt.Println(len(g.edges))
+	unprocessed_edges := maps.Values2(g.edges)
+	for _, edge := range unprocessed_edges {
+		g.Remove_edge(edge)
+	}
+
+}
+func (g *Geometric_graph) Triangle_k_core() {
+	var (
+		k int64
+	)
+	for len(g.edges) > 0 {
+		k++
+		unprocessed_edges := maps.Values2(g.edges)
+		for len(unprocessed_edges) > 0 {
+			if e := maps.Pop_front(&unprocessed_edges); e != nil {
+
+				if e.triangle_number < k {
+					for _, corner := range e.triangles {
+						corner.destination.triangle_number--
+						corner.middle.triangle_number--
+						unprocessed_edges = append(unprocessed_edges, corner.destination)
+						unprocessed_edges = append(unprocessed_edges, corner.middle)
+					}
+					e.destination.edges_number--
+					e.source.edges_number--
+					if e.destination.edges_number == 0 {
+						g.nodes[e.destination.ID].core_number = k - 1
+					}
+					if e.source.edges_number == 0 {
+						g.nodes[e.source.ID].core_number = k - 1
+					}
+					g.Remove_edge(e)
+				}
+			}
+		}
+
+	}
 
 }
 func Test4(g *Geometric_graph) {
@@ -189,6 +242,60 @@ func (g *Geometric_graph) Search(s, d *Geometric_node) (bool, int64) {
 		part := edges[3*len(edges)/4:]
 		for i := 0; i < len(part); i++ {
 			if part[i].source == s && part[i].destination == d || part[i].source == d && part[i].destination == s {
+				is_searched = true
+				search_num = int64(i + 3*len(edges)/4)
+				return
+			}
+		}
+	}(&wg)
+	wg.Wait()
+	return is_searched, search_num
+}
+func (g *Geometric_graph) Search2(s, d *Geometric_node) (bool, int64) {
+	var wg sync.WaitGroup
+	edges := maps.Values2(g.edges)
+	is_searched := false
+	var search_num int64 = -1
+	wg.Add(4)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		part := edges[:len(g.edges)/4]
+		for i := 0; i < len(part); i++ {
+			if part[i] != nil && part[i].source == s && part[i].destination == d || part[i].source == d && part[i].destination == s {
+				is_searched = true
+				search_num = int64(i)
+				return
+			}
+		}
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		part := edges[len(edges)/4 : 2*len(edges)/4]
+		for i := 0; i < len(part); i++ {
+			if part[i] != nil && part[i].source == s && part[i].destination == d || part[i].source == d && part[i].destination == s {
+				is_searched = true
+				search_num = int64(i + len(edges)/4)
+
+				return
+			}
+		}
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		part := edges[2*len(edges)/4 : 3*len(edges)/4]
+		for i := 0; i < len(part); i++ {
+			if part[i] != nil && part[i].source == s && part[i].destination == d || part[i].source == d && part[i].destination == s {
+				is_searched = true
+				search_num = int64(i + 2*len(edges)/4)
+				return
+			}
+		}
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		part := edges[3*len(edges)/4:]
+		for i := 0; i < len(part); i++ {
+			if part[i] != nil && part[i].source == s && part[i].destination == d || part[i].source == d && part[i].destination == s {
 				is_searched = true
 				search_num = int64(i + 3*len(edges)/4)
 				return

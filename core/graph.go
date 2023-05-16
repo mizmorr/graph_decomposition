@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -53,6 +54,37 @@ func (g *Undirected_Graph) get_new_id() int64 {
 		return 0
 	}
 	return g.nodes[int64(len(g.nodes)-1)].ID + 1
+}
+func (set *Core_set) get_max() {
+	var wg sync.WaitGroup
+	var max int64
+	wg.Add(3)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		for i := int64(0); i < int64(len(set.numbers)/3); i++ {
+			if set.numbers[i] > max {
+				max = set.numbers[i]
+			}
+		}
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		for i := int64(len(set.numbers) / 3); i < int64(2*len(set.numbers)/3); i++ {
+			if set.numbers[i] > max {
+				max = set.numbers[i]
+			}
+		}
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		for i := int64(2 * len(set.numbers) / 3); i < int64(len(set.numbers)); i++ {
+			if set.numbers[i] > max {
+				max = set.numbers[i]
+			}
+		}
+	}(&wg)
+	wg.Wait()
+	fmt.Println(max)
 }
 func p_pring(ar []*Node) {
 	for _, n := range ar {
@@ -142,14 +174,115 @@ func first_sample() *Undirected_Graph {
 	// }
 	return g
 }
+func Second_sample() *Undirected_Graph {
+	g := NewUndirectedGraph()
+	filename := flag.String("filename", "samples/last_fm.txt", "The file to parse")
+	flag.Parse()
+	var result []int64
+	if *filename == "" {
+		log.Fatal("Provide a file to parse")
+	}
 
-func (g *Undirected_Graph) remove_node(id int64) {
-	// vals := maps.Values2(g.nodes)
-	// node_id := interpolation_search(vals, 0, int64(len(vals)-1), id)
+	names := make(chan string)
+	readerr := make(chan error)
+	go GetLine(*filename, names, readerr)
 
-	// if g.nodes[node_id] == nil {
-	// 	return
+	for name := range names {
+		k := strings.Split(name, ",")
+		for _, num := range k {
+			postj, err := strconv.Atoi(num)
+			if err != nil {
+				panic(err)
+			}
+			result = append(result, int64(postj))
+		}
+
+	}
+	if err := <-readerr; err != nil {
+		log.Fatal(err)
+	}
+	adjes := map[int64]map[int64]int64{}
+	for _, node := range result {
+		if _, value := adjes[node]; !value {
+			adjes[node] = make(map[int64]int64, 0)
+		}
+	}
+	for i := int64(0); i < int64(len(result)-1); i += 2 {
+		adjes[result[i]][int64(len(adjes[result[i]]))] = result[i+1]
+		adjes[result[i+1]][int64(len(adjes[result[i+1]]))] = result[i]
+	}
+	for i := int64(0); i < int64(len(adjes)); i++ {
+		g.append_node(adjes[i])
+	}
+	for _, node := range g.nodes {
+		node.edge_number = int64(len(node.adj_list))
+	}
+	// for i := 0; i < len(k); i++ {
 	// }
+	return g
+}
+func git_sample() *Undirected_Graph {
+	g := NewUndirectedGraph()
+	filename := flag.String("filename", "samples/git.txt", "The file to parse")
+	flag.Parse()
+	var result []int64
+	if *filename == "" {
+		log.Fatal("Provide a file to parse")
+	}
+
+	names := make(chan string)
+	readerr := make(chan error)
+	go GetLine(*filename, names, readerr)
+
+	for name := range names {
+		k := strings.Split(name, ",")
+		for _, num := range k {
+			postj, err := strconv.Atoi(num)
+			if err != nil {
+				panic(err)
+			}
+			result = append(result, int64(postj))
+		}
+
+	}
+	if err := <-readerr; err != nil {
+		log.Fatal(err)
+	}
+	adjes := map[int64]map[int64]int64{}
+	for _, node := range result {
+		if _, value := adjes[node]; !value {
+			adjes[node] = make(map[int64]int64, 0)
+		}
+	}
+	for i := int64(0); i < int64(len(result)-1); i += 2 {
+		adjes[result[i]][int64(len(adjes[result[i]]))] = result[i+1]
+		adjes[result[i+1]][int64(len(adjes[result[i+1]]))] = result[i]
+	}
+	for i := int64(0); i < int64(len(adjes)); i++ {
+		g.append_node(adjes[i])
+	}
+	for _, node := range g.nodes {
+		node.edge_number = int64(len(node.adj_list))
+	}
+
+	return g
+}
+func Test_second_sample() {
+	g := Second_sample()
+	t := time.Now()
+	g.k_core_label()
+	fmt.Println(time.Since(t))
+}
+func Test_git_sample() {
+	g := git_sample()
+	t := time.Now()
+	set := g.k_core_label()
+	fmt.Println(time.Since(t).Seconds())
+	set.get_max()
+
+}
+func (g *Undirected_Graph) remove_node(id int64) {
+
 	for _, from := range g.nodes[id].adj_list {
 		if g.nodes[from] != nil {
 			adj := maps.Values2(g.nodes[from].adj_list)
@@ -160,14 +293,6 @@ func (g *Undirected_Graph) remove_node(id int64) {
 	delete(g.nodes, id)
 
 }
-
-// func (g *Undirected_Graph) remove_node(id int64) {
-
-//		g.nodes = a[len(a)-1] // Copy last element to index i.
-//		a[len(a)-1] = ""      // Erase last element (write zero value).
-//		a = a[:len(a)-1]
-//		fmt.Print64ln(a)
-//	}
 
 func (g *Undirected_Graph) append_node(ids map[int64]int64) {
 	g.nodes[g.get_new_id()] = &Node{g.get_new_id(), ids, int64(len(ids))}

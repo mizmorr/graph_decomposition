@@ -1,6 +1,7 @@
 package design
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -9,21 +10,28 @@ import (
 	"github.com/go-echarts/go-echarts/v2/types"
 )
 
-func MakeBar(res []float64) {
+func MakeBar(res []float64, keys []int64) {
 	xaxiss := []string{}
+	for _, key := range keys {
+		xaxiss = append(xaxiss, fmt.Sprint(key))
+	}
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{Theme: types.ThemeWesteros, Width: "1000px", Height: "800px"}),
-		charts.WithTitleOpts(opts.Title{Title: "Распределение значений номеров k-ядер заданного геометрического графа"}),
+		charts.WithInitializationOpts(opts.Initialization{Theme: types.ThemeWesteros, Width: "1100px", Height: "700px"}),
+		charts.WithTitleOpts(opts.Title{Title: "Распределение значений номеров k-ядер"}),
 	)
 	values := []opts.BarData{}
 	for _, k := range res {
 		values = append(values, opts.BarData{Value: k})
 	}
-	bar.SetXAxis(xaxiss).AddSeries("Значения k-ядер", values).SetSeriesOptions(
+	bar.SetXAxis(xaxiss).AddSeries("Значения k-ядер", values, charts.WithMarkPointNameCoordItemOpts(
+		opts.MarkPointNameCoordItem{
+			Value:      fmt.Sprint(keys[0]),
+			Coordinate: []interface{}{"", res[0]},
+		})).SetSeriesOptions(
 		charts.WithLabelOpts(opts.Label{
 			Show:     true,
-			Position: "top",
+			Position: "insideTopRight",
 		}))
 
 	bar.SetSeriesOptions(charts.WithBarChartOpts(opts.BarChart{

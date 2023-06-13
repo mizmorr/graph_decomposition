@@ -301,7 +301,7 @@ func random_graph(nodes_num int64, prob float64) *Undirected_Graph {
 	// 	}
 	// }(&wg)
 	// wg.Wait()
-	for i := int64(0); i < nodes_num-1; i++ {
+	for i := int64(0); i < nodes_num/2; i++ {
 		for j := i + 1; j < nodes_num; j++ {
 			if rand.Float64() < prob {
 				g.add_Edge(i, j)

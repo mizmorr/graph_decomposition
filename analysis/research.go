@@ -39,6 +39,6 @@ func Research(core_set map[int64]int64, sum int64) (string, map[int64]*Element) 
 		fmt.Println(val)
 	}
 	list := []string{"математическое ожидание значения номера k-ядра: ", "дисперсия значений номеров k-ядер: ", "среднеквадратичное отклонение значений номеров k-ядер: ", "мода значений номеров k-ядер: "}
-	result := fmt.Sprintln(list[0], expected_val, "\n", list[1], varience, "\n", list[2], standard_deviation, modal)
+	result := fmt.Sprintln(list[0], expected_val, "\n", list[1], varience, "\n", list[2], standard_deviation, "\n", list[3], modal)
 	return result, distribution
 }

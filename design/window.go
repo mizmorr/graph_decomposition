@@ -1,12 +1,14 @@
 package design
 
 import (
+	"fmt"
 	"image/color"
 	"strconv"
 	"strings"
 
 	"decomposition/analysis"
 	"decomposition/core"
+	"decomposition/maps"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -17,12 +19,13 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func result_window(myApp fyne.App, s string, k []float64) {
+func result_window(myApp fyne.App, s string, k []float64, keys []int64) {
 	win2 := myApp.NewWindow("Result")
 	win2.SetFixedSize(true)
 	win2.Resize(fyne.NewSize(300, 400))
 	green := color.NRGBA{R: 133, G: 133, B: 133, A: 255}
 	label := canvas.NewText("Результаты исследования", green)
+	label.Alignment = fyne.TextAlignCenter
 	label.TextSize = 20
 	list := strings.Split(s, "\n")
 	label1 := canvas.NewText(list[0], green)
@@ -33,9 +36,9 @@ func result_window(myApp fyne.App, s string, k []float64) {
 	label3.TextSize = 12
 	label4 := canvas.NewText(list[3], green)
 	label4.TextSize = 12
-
+	fmt.Println(label4.Text)
 	button_dist := widget.NewButtonWithIcon("Построить график распределения", theme.ContentAddIcon(), func() {
-		MakeBar(k)
+		MakeBar(k, keys)
 	})
 	win2.SetContent(container.NewGridWithRows(7, label, label1, label2, label3, label4, layout.NewSpacer(), button_dist))
 	win2.Show()
@@ -115,7 +118,7 @@ func Show() {
 	button_g := widget.NewButtonWithIcon("Запуск алгоритма декомпозиции", theme.MediaPlayIcon(), func() {
 		nodes, _ := strconv.Atoi(entry_nodes_count2.Text)
 		strconv.Atoi(entry_radius.Text)
-		res_time, _, set, size = core.Random_test(int64(nodes), 0.2, 0)
+		res_time, _, set, size = core.Random_test(int64(nodes), 0.1, 0)
 		label_result_time3.SetText(res_time)
 	})
 	button_analysis := widget.NewButtonWithIcon("Анализ", theme.SearchIcon(), func() {
@@ -123,10 +126,11 @@ func Show() {
 	})
 	button_result := widget.NewButtonWithIcon("Результаты", theme.InfoIcon(), func() {
 		var res []float64
+		keys := maps.Keys_ordered(elements)
 		for _, e := range elements {
 			res = append(res, e.Percent)
 		}
-		result_window(myApp, results, res)
+		result_window(myApp, results, res, keys)
 		// myWindow.ShowAndRun()
 	})
 	geometric_container := container.NewGridWithRows(3, label3, cont, container.NewAdaptiveGrid(3, container.NewPadded(button_g), container.NewPadded(button_analysis), container.NewPadded(button_result)))
